@@ -18,37 +18,38 @@ public class GridGenerator : MonoBehaviour
         GenerateGrid();
     }
 
-    public void GenerateGrid()
-    {
-        // 获取父物体当前位置
-        Vector3 parentPosition = transform.position;
-        
-        // 计算起始偏移量（基于父物体坐标系）
-        float offset = (gridSize - 1) * cellSize * 0.5f;
-        
-        for (int x = 0; x < gridSize; x++)
-        {
-            for (int y = 0; y < gridSize; y++)
-            {
-                // 计算相对父物体的本地位置
-                Vector3 localPos = new Vector3(
-                    x * cellSize - offset,
-                    0,
-                    y * cellSize - offset
-                );
+public void GenerateGrid()
+{
+    // 清空现有棋盘格
+    foreach (Transform child in transform) {
+        Destroy(child.gameObject);
+    }
 
-                // 转换为世界坐标（考虑父物体位置和旋转）
-                Vector3 worldPos = transform.TransformPoint(localPos);
-                
-                GameObject cell = Instantiate(
-                    gridCellPrefab,
-                    worldPos,  // 使用转换后的世界坐标
-                    Quaternion.Euler(90, 0, 0),
-                    transform
-                );
-                
-                cell.name = $"Cell_{x}_{y}";
-            }
+    // 计算起始偏移量
+    float offset = (gridSize - 1) * cellSize * 0.5f;
+
+    for (int x = 0; x < gridSize; x++)
+    {
+        for (int y = 0; y < gridSize; y++)
+        {
+            // 计算本地坐标系位置
+            Vector3 localPosition = new Vector3(
+                x * cellSize - offset,
+                0,
+                y * cellSize - offset
+            );
+
+            // 实例化并设置父物体
+            GameObject cell = Instantiate(
+                gridCellPrefab,
+                transform  // 直接设置父物体
+            );
+
+            // 设置本地坐标和旋转
+            cell.transform.localPosition = localPosition;
+            cell.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            cell.name = $"Cell_{x}_{y}";
         }
     }
+}
 }

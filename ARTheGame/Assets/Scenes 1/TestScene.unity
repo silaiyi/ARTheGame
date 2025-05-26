@@ -817,7 +817,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   chessboardPrefab: {fileID: 8906554613852565405, guid: 586084e2bc9970f42b4c4d743457b400, type: 3}
-  defaultDistance: 1
+  defaultDistance: 2
   rotationSpeed: 20
   minScale: 0.5
   maxScale: 2
@@ -826,6 +826,12 @@ MonoBehaviour:
   repositionButton: {fileID: 1436204186}
   moveDuration: 0.5
   viewportMargin: 0.1
+  scaleSensitivity: 0.01
+  verticalPositionFactor: 0
+  cameraDistanceOffset: 1.5
+  groundCheckDistance: 2
+  maxVerticalAngle: 90
+  spawnRotationOffset: {x: 90, y: 0, z: 0}
 --- !u!1 &1284306466
 GameObject:
   m_ObjectHideFlags: 0

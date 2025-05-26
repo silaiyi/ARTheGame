@@ -23,7 +23,7 @@ MonoBehaviour:
     m_SerializedTextureGuid:
       m_GuidLow: 13750843851868807877
       m_GuidHigh: 9243086451577250602
-    m_Size: {x: 0.1, y: 0.1}
+    m_Size: {x: 0.05, y: 0.05}
     m_SpecifySize: 1
     m_Name: Card
     m_Texture: {fileID: 2800000, guid: d08122c5cfa0bed42ae37cde270a4680, type: 3}
