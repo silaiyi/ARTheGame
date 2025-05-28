@@ -13,6 +13,8 @@ public class ImageTracker : MonoBehaviour
     public float rotationSpeed = 20f;    // 旋转速度
     public float minScale = 0.1f;        // 最小缩放
     public float maxScale = 2.0f;        // 最大缩放
+    public float verticalOffset = 0f; // 垂直方向偏移量
+    public float horizontalOffset = 0f; // 水平方向偏移量
 
     [Header("UI Elements")]
     public GameObject confirmationUI;
@@ -54,8 +56,10 @@ public class ImageTracker : MonoBehaviour
     private float currentRotationX; // 新增X轴旋转存储
     [Header("Spawn Settings")]
     [Tooltip("初始生成旋转偏移")]
-    public Vector3 spawnRotationOffset = new Vector3(0, 90f, 0);
-
+    public Vector3 spawnRotationOffset = new Vector3(0, 0, 0);
+    [Header("Piece Prefabs")]
+    public GameObject OPiecePrefab;
+    public GameObject XPiecePrefab;
 
     void Awake()
     {
@@ -104,10 +108,25 @@ public class ImageTracker : MonoBehaviour
 
     void UpdateTrackedImage(ARTrackedImage trackedImage)
     {
-        if (trackedImage.trackingState == TrackingState.Tracking)
+        if ((trackedImage.referenceImage.name == "O" || trackedImage.referenceImage.name == "X") &&
+        trackedImage.trackingState == TrackingState.Tracking)
         {
-            currentTrackedImage = trackedImage;
-            ShowConfirmationUI(trackedImage.transform.position);
+            HandlePieceTracking(trackedImage);
+        }
+        else if (trackedImage.referenceImage.name == "Card")
+        {
+            // 新增条件：仅在棋盘不存在且处于追踪状态时处理
+            if (!BoardExists && 
+                trackedImage.trackingState == TrackingState.Tracking)
+            {
+                currentTrackedImage = trackedImage;
+                ShowConfirmationUI(trackedImage.transform.position);
+            }
+            // 新增：若棋盘已存在，隐藏UI
+            else if (BoardExists)
+            {
+                confirmationUI.SetActive(false);
+            }
         }
     }
 
@@ -121,23 +140,25 @@ public class ImageTracker : MonoBehaviour
 
     public void ConfirmPlacement()
     {
-        if (arCamera == null) // 新增空引用检查
+        if (arCamera == null)
         {
             Debug.LogError("AR Camera not found!");
             return;
         }
+
         // 生成棋盘在摄像头前方
         Vector3 spawnPosition = arCamera.transform.position
-            + arCamera.transform.forward * defaultDistance;
-            //+ new Vector3(0, 0.1f, 0); // 防止棋盘嵌入地面
+            + arCamera.transform.forward * defaultDistance
+            + arCamera.transform.up * verticalOffset // 沿攝像機的上方向偏移
+            + arCamera.transform.right * horizontalOffset;
         Quaternion spawnRotation = Quaternion.LookRotation(
-            arCamera.transform.forward, 
+            arCamera.transform.forward,
             Vector3.up
         ) * Quaternion.Euler(spawnRotationOffset);
+
         if (repositionButton != null)
         {
             repositionButton.gameObject.SetActive(true);
-            // 设置按钮位置
             RepositionButtonToCorner();
         }
 
@@ -146,43 +167,26 @@ public class ImageTracker : MonoBehaviour
         spawnedBoard = Instantiate(chessboardPrefab, spawnPosition, spawnRotation);
         confirmationUI.SetActive(false);
         currentBoard = spawnedBoard;
+        currentRotationX = 0f; // 初始X轴旋转设为90度
         currentRotationY = spawnRotation.eulerAngles.y;
-        currentRotationX = 0; // 重置垂直角度
+        
+        // 应用初始旋转
+        spawnedBoard.transform.rotation = Quaternion.Euler(currentRotationX, currentRotationY, 0);
 
-        // 禁用图像追踪
-        trackedImageManager.enabled = false;
-        // 在ConfirmPlacement方法最后添加：
-        spawnedBoard.AddComponent<ARAnchor>();  // 保持AR空间位置稳定
-        spawnedBoard.AddComponent<Rigidbody>().isKinematic = true;  // 防止物理飞走
-    }
-    /*
-    void HandleTouchInput()
-    {
-        // 双指缩放
-        if (Input.touchCount == 2)
+        // ==== 修改部分开始 ====
+        // 刷新图像追踪状态
+        if (trackedImageManager != null)
         {
-            Touch touch1 = Input.GetTouch(0);
-            Touch touch2 = Input.GetTouch(1);
-
-            if (touch2.phase == TouchPhase.Began)
-            {
-                initialDistance = Vector2.Distance(touch1.position, touch2.position);
-            }
-
-            if (touch1.phase == TouchPhase.Moved || touch2.phase == TouchPhase.Moved)
-            {
-                float currentDistance = Vector2.Distance(touch1.position, touch2.position);
-                float scaleFactor = currentDistance / initialDistance;
-
-                Vector3 newScale = spawnedBoard.transform.localScale * scaleFactor;
-                newScale = Vector3.ClampMagnitude(newScale, maxScale);
-                newScale = Vector3.Max(newScale, Vector3.one * minScale);
-
-                spawnedBoard.transform.localScale = newScale;
-                initialDistance = currentDistance;
-            }
+            trackedImageManager.enabled = false;
+            trackedImageManager.enabled = true; // 重置管理器
         }
-    }*/
+        BoardExists = true; // 全局标记棋盘已生成
+        // ==== 修改部分结束 ====
+
+        spawnedBoard.AddComponent<ARAnchor>();
+        //spawnedBoard.AddComponent<Rigidbody>().isKinematic = true;
+    }
+
     void HandleTouchInput()
     {
         if (Input.touchCount == 1) HandleRotation();
@@ -203,17 +207,17 @@ public class ImageTracker : MonoBehaviour
             case TouchPhase.Moved:
                 // 获取标准化位移量
                 Vector2 delta = touch.deltaPosition * rotationSpeed * Time.deltaTime;
-                
+
                 // 修正水平旋转方向（乘以-1反转方向）
-                currentRotationY -= delta.x; 
-                
+                currentRotationY -= delta.x;
+
                 // 新增垂直旋转控制（使用delta.y）
                 currentRotationX = Mathf.Clamp(
-                    currentRotationX + delta.y, 
-                    -maxVerticalAngle, 
+                    currentRotationX + delta.y,
+                    -maxVerticalAngle,
                     maxVerticalAngle
                 );
-                
+
                 // 应用复合旋转（先Y轴后X轴）
                 currentBoard.transform.rotation = Quaternion.Euler(
                     currentRotationX,
@@ -331,5 +335,97 @@ public class ImageTracker : MonoBehaviour
             rectTransform.anchoredPosition = new Vector2(200, -100); // 适当调整边距
         }
     }
-    
+    public static bool BoardExists { get; private set; }
+    void OnDestroy()
+    {
+        BoardExists = false;
+    }
+    // 修改后的棋子生成逻辑
+    void HandlePieceTracking(ARTrackedImage trackedImage)
+    {
+        // 增加追踪状态检查
+        if (trackedImage.trackingState != TrackingState.Tracking) return;
+
+        if (trackedImage.GetComponentInChildren<PieceController>() != null) return;
+
+        GameObject prefab = trackedImage.referenceImage.name == "O"
+            ? OPiecePrefab : XPiecePrefab;
+
+        // 检查Prefab是否为空
+        if (prefab == null)
+        {
+            Debug.LogError("棋子Prefab未赋值！");
+            return;
+        }
+
+        // 实例化棋子
+        GameObject piece = Instantiate(
+            prefab,
+            trackedImage.transform.position + Vector3.up * 0.1f,
+            trackedImage.transform.rotation,
+            trackedImage.transform
+        );
+
+        PieceController pc = piece.GetComponent<PieceController>();
+        if (pc == null)
+        {
+            Debug.LogError("棋子Prefab缺少PieceController组件！");
+            return;
+        }
+        pc.Initialize(trackedImage);
+
+        // 缩放逻辑
+        if (trackedImage.size.x <= 0)
+        {
+            Debug.LogError("图像尺寸无效！");
+            return;
+        }
+        float scaleFactor = trackedImage.size.x / 0.05f;
+        piece.transform.localScale = Vector3.one * scaleFactor;
+    }
+    public void ResetBoard()
+    {
+        if (spawnedBoard == null) return;
+        
+        // 保持当前位置和缩放，仅旋转X轴90度
+        Vector3 currentPosition = spawnedBoard.transform.position;
+        Vector3 currentScale = spawnedBoard.transform.localScale;
+        
+        // 创建包含X轴90度旋转的新四元数
+        Quaternion targetRotation = Quaternion.Euler(90f, currentRotationY, 0);
+        
+        // 平滑过渡旋转
+        StartCoroutine(SmoothReset(currentPosition, currentScale, targetRotation));
+    }
+
+    // 新增协程处理平滑过渡
+    IEnumerator SmoothReset(Vector3 position, Vector3 scale, Quaternion rotation)
+    {
+        isMoving = true;
+        float duration = 0.5f;
+        float elapsed = 0;
+        
+        Vector3 startPos = spawnedBoard.transform.position;
+        Quaternion startRot = spawnedBoard.transform.rotation;
+        Vector3 startScale = spawnedBoard.transform.localScale;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            spawnedBoard.transform.position = Vector3.Lerp(startPos, position, t);
+            spawnedBoard.transform.rotation = Quaternion.Slerp(startRot, rotation, t);
+            spawnedBoard.transform.localScale = Vector3.Lerp(startScale, scale, t);
+            
+            yield return null;
+        }
+
+        // 强制最终状态
+        spawnedBoard.transform.position = position;
+        spawnedBoard.transform.rotation = rotation;
+        spawnedBoard.transform.localScale = scale;
+        
+        isMoving = false;
+    }
 }

@@ -23,7 +23,27 @@ MonoBehaviour:
     m_SerializedTextureGuid:
       m_GuidLow: 13750843851868807877
       m_GuidHigh: 9243086451577250602
-    m_Size: {x: 0.05, y: 0.05}
+    m_Size: {x: 0.1, y: 0.1}
     m_SpecifySize: 1
     m_Name: Card
     m_Texture: {fileID: 2800000, guid: d08122c5cfa0bed42ae37cde270a4680, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 4692635778951071916
+      m_GuidHigh: 9384778661950037141
+    m_SerializedTextureGuid:
+      m_GuidLow: 7022331359306495214
+      m_GuidHigh: 3786928618773339467
+    m_Size: {x: 0.01, y: 0.01}
+    m_SpecifySize: 1
+    m_Name: X
+    m_Texture: {fileID: 2800000, guid: 568cb4ee552a61744bddbec783df8d34, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 5701920861308470949
+      m_GuidHigh: 4722541457081465510
+    m_SerializedTextureGuid:
+      m_GuidLow: 14358627356324224936
+      m_GuidHigh: 5343412263100041416
+    m_Size: {x: 0.01, y: 0.01}
+    m_SpecifySize: 1
+    m_Name: O
+    m_Texture: {fileID: 2800000, guid: 5be95fa81781c744c8488b86249d274a, type: 3}

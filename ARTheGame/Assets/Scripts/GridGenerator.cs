@@ -18,38 +18,43 @@ public class GridGenerator : MonoBehaviour
         GenerateGrid();
     }
 
-public void GenerateGrid()
-{
-    // 清空现有棋盘格
-    foreach (Transform child in transform) {
-        Destroy(child.gameObject);
-    }
-
-    // 计算起始偏移量
-    float offset = (gridSize - 1) * cellSize * 0.5f;
-
-    for (int x = 0; x < gridSize; x++)
+    public void GenerateGrid()
     {
-        for (int y = 0; y < gridSize; y++)
+        // 清空现有棋盘格
+        foreach (Transform child in transform)
         {
-            // 计算本地坐标系位置
-            Vector3 localPosition = new Vector3(
-                x * cellSize - offset,
-                0,
-                y * cellSize - offset
-            );
+            Destroy(child.gameObject);
+        }
 
-            // 实例化并设置父物体
-            GameObject cell = Instantiate(
-                gridCellPrefab,
-                transform  // 直接设置父物体
-            );
+        // 计算起始偏移量
+        float offset = (gridSize - 1) * cellSize * 0.5f;
 
-            // 设置本地坐标和旋转
-            cell.transform.localPosition = localPosition;
-            cell.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            cell.name = $"Cell_{x}_{y}";
+        for (int x = 0; x < gridSize; x++)
+        {
+            for (int y = 0; y < gridSize; y++)
+            {
+                // 计算本地坐标系位置
+                Vector3 localPosition = new Vector3(
+                    x * cellSize - offset,
+                    0,
+                    y * cellSize - offset
+                );
+
+                // 实例化并设置父物体
+                GameObject cell = Instantiate(
+                    gridCellPrefab,
+                    transform  // 直接设置父物体
+                );
+
+                // 设置本地坐标和旋转
+                cell.transform.localPosition = localPosition;
+                cell.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                cell.name = $"Cell_{x}_{y}";
+            }
         }
     }
-}
+    public Transform GetCell(int x, int y)
+    {
+        return transform.Find($"Cell_{x}_{y}");
+    }
 }
